@@ -88,20 +88,22 @@ class DataGenerator(object):
         metaval_images = tf.reshape(metaval_images, [-1,self.num_examples_per_task, self.dim_input])
         metaval_labels = tf.reshape(metaval_labels, [-1,self.num_examples_per_task, 2])
         self.metaval_inputs = {'images': metaval_images, 'labels': metaval_labels, 'iter_init_op': metaval_iter_init_op}
+        print(train_images)
+        print(train_labels)
 
         # Test that the images are as per the image files passed
-        with tf.Session() as sess:
-          for _ in range(self.num_tasks):
-            image_batch, label_batch = sess.run([train_images, train_labels]) # index 0 contains image and index 1 contains label
-            print(image_batch.shape)
-            print(label_batch.shape)
-            image_batch = image_batch.reshape([-1,self.num_examples_per_task, self.canvas_w,self.canvas_h,3])
-            for i in range(self.num_tasks):
-              plt.figure(i+1)
-              for j in range(self.num_examples_per_task):
-                plt.subplot(2,self.num_examples_per_task,j+1)
-                plt.imshow(image_batch[i,j,:,:])
-                print(label_batch[i,j,:])
+#        with tf.Session() as sess:
+#          for _ in range(self.num_tasks):
+#            image_batch, label_batch = sess.run([train_images, train_labels]) # index 0 contains image and index 1 contains label
+#            print(image_batch.shape)
+#            print(label_batch.shape)
+#            image_batch = image_batch.reshape([-1,self.num_examples_per_task, self.canvas_w,self.canvas_h,3])
+#            for i in range(self.num_tasks):
+#              plt.figure(i+1)
+#              for j in range(self.num_examples_per_task):
+#                plt.subplot(2,self.num_examples_per_task,j+1)
+#                plt.imshow(image_batch[i,j,:,:])
+#                print(label_batch[i,j,:])
         
 
     def GenerateResizedImages(self, raw_img_dir, resized_img_dir, is_training=True):

@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python.platform import flags
 from datagenerator import datagenerator as dg
 from model import maml
-
+import train
 flags = tf.app.flags 
 FLAGS = tf.app.flags.FLAGS
 
@@ -63,13 +63,12 @@ def main():
         image_tensor = data_generator.train_inputs['images']
         label_tensor = data_generator.train_inputs['labels']
         iter_init_op = data_generator.train_inputs['iter_init_op']
-
         inputa = tf.slice(image_tensor, [0,0,0], [-1,FLAGS.update_batch_size,-1])
         inputb = tf.slice(image_tensor, [0,FLAGS.update_batch_size,0], [-1, -1,-1])
         labela = tf.slice(label_tensor, [0,0,0], [-1,FLAGS.update_batch_size,-1])
         labelb = tf.slice(label_tensor, [0,FLAGS.update_batch_size,0], [-1,-1,-1])
         train_input_tensors = {'inputa': inputa, 'inputb': inputb, 'labela': labela, 'labelb': labelb, 'iter_init_op': iter_init_op}
-    
+   
     image_tensor = data_generator.metaval_inputs['images']
     label_tensor = data_generator.metaval_inputs['labels']
     iter_init_op = data_generator.metaval_inputs['iter_init_op']

@@ -1,7 +1,8 @@
 import tensorflow as tf
 from tensorflow.python.platform import flags
-
-flags = tf.app.flagsFLAGS = flags.FLAGS
+from util import tf_util
+flags = tf.app.flags
+FLAGS = flags.FLAGS
 
 class MAML:
     def __init__(self, dim_input=1, dim_output=1, test_num_updates=5):
@@ -11,7 +12,7 @@ class MAML:
         self.update_lr = FLAGS.update_lr
         self.meta_lr = tf.placeholder_with_default(FLAGS.meta_lr, ())
         self.test_num_updates = test_num_updates
-        self.loss_func = mse
+        self.loss_func = tf_util.mse
         self.dim_hidden = FLAGS.num_filters
         self.forward = self.forward_conv
         self.construct_weights = self.construct_conv_weights
@@ -137,10 +138,10 @@ class MAML:
         channels = self.channels
         inp = tf.reshape(inp, [-1, self.img_size, self.img_size, channels])
 
-        hidden1 = conv_block(inp, weights['conv1'], weights['b1'], is_training, reuse, scope+'0', self.dropout_rate)
-        hidden2 = conv_block(hidden1, weights['conv2'], weights['b2'], is_training, reuse, scope+'1', self.dropout_rate)
-        hidden3 = conv_block(hidden2, weights['conv3'], weights['b3'], is_training, reuse, scope+'2', self.dropout_rate)
-        hidden4 = conv_block(hidden3, weights['conv4'], weights['b4'], is_training, reuse, scope+'3', self.dropout_rate)
+        hidden1 = tf_util.conv_block(inp, weights['conv1'], weights['b1'], is_training, reuse, scope+'0', self.dropout_rate)
+        hidden2 = tf_util.conv_block(hidden1, weights['conv2'], weights['b2'], is_training, reuse, scope+'1', self.dropout_rate)
+        hidden3 = tf_util.conv_block(hidden2, weights['conv3'], weights['b3'], is_training, reuse, scope+'2', self.dropout_rate)
+        hidden4 = tf_util.conv_block(hidden3, weights['conv4'], weights['b4'], is_training, reuse, scope+'3', self.dropout_rate)
         hidden4 = tf.reduce_mean(hidden4, [1, 2])
 
         return tf.matmul(hidden4, weights['w5']) + weights['b5']            

@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib.layers.python import layers as tf_layers
-from tensor.python.platform import flags
+from tensorflow.python.platform import flags
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -26,7 +26,7 @@ def conv_block(inp, cweight, bweight, is_training, reuse, scope, dropout_rate = 
     
     if FLAGS.reg == 'dropout':
       if is_training:
-        normed = tf.nn.dropout(normed, rate=dropout_rate)
+        normed = tf.nn.dropout(normed, keep_prob=1-dropout_rate)
       else:
         normed = tf.add(normed, 0)
     
