@@ -1,3 +1,11 @@
+import tensorflow as tf
+from tensorflow.contrib.layers.python import layers as tf_layers
+from tensor.python.platform import flags
+
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+
+
 ## Network helpers
 def safe_get(name, *args, **kwargs):
     try:

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.platform import flags
-from datagenerator import DataGenerator
-from model import MAML
+from datagenerator import datagenerator as dg
+from model import maml
 
 flags = tf.app.flags 
 FLAGS = tf.app.flags.FLAGS
@@ -15,14 +15,14 @@ flags.DEFINE_bool('data_generation', False, 'Set to True if you want to generate
 ## Training options
 flags.DEFINE_integer('pretrain_iterations', 0, 'number of pre-training iterations.')
 flags.DEFINE_integer('metatrain_iterations', 15000, 'number of metatraining iterations.') # 15k for omniglot, 50k for sinusoid
-flags.DEFINE_integer('meta_batch_size', 20, 'number of tasks sampled per meta-update')
-flags.DEFINE_float('meta_lr', 0.001, 'the base learning rate of the generator')
+flags.DEFINE_integer('meta_batch_size', 25, 'number of tasks sampled per meta-update')
+flags.DEFINE_float('meta_lr', 0.1, 'the base learning rate of the generator')
 flags.DEFINE_integer('update_batch_size', 5, 'number of examples used for inner gradient update (K for K-shot learning).')
-flags.DEFINE_float('update_lr', 0.01, 'step size alpha for inner gradient update.') # 0.1 for omniglot
+flags.DEFINE_float('update_lr', 0.1, 'step size alpha for inner gradient update.') # 0.1 for omniglot
 flags.DEFINE_integer('num_updates', 5, 'number of inner gradient updates during training.')
-flags.DEFINE_string('training_data_dir', '/content/drive/My Drive/Code/OSILML/data/training/', 'Directory for the training data')
-flags.DEFINE_string('testing_data_dir', '/content/drive/My Drive/Code/OSILML/data/testing/', 'Directory for the testing data')
-flags.DEFINE_string('resized_data_dir', '/content/drive/My Drive/Code/OSILML/data/resized_data/', 'Directory for the resized omniglot data')
+flags.DEFINE_string('training_data_dir', 'data/training/', 'Directory for the training data')
+flags.DEFINE_string('testing_data_dir', 'data/testing/', 'Directory for the testing data')
+flags.DEFINE_string('resized_data_dir', 'data/resized_data/', 'Directory for the resized omniglot data')
 
 ## Model options
 flags.DEFINE_string('norm', 'batch_norm', 'batch_norm, layer_norm, or None')
@@ -35,7 +35,7 @@ flags.DEFINE_bool('stop_grad', True, 'if True, do not use second derivatives in 
 
 ## Logging, saving, and testing options
 flags.DEFINE_bool('log', True, 'if false, do not log summaries, for debugging code.')
-flags.DEFINE_string('logdir', '/content/drive/My Drive/Code/OSILML/data/tmp', 'directory for summaries and checkpoints.')
+flags.DEFINE_string('logdir', 'data/tmp', 'directory for summaries and checkpoints.')
 flags.DEFINE_bool('resume', True, 'resume training if there is a model available')
 flags.DEFINE_bool('train', True, 'True to train, False to test.')
 flags.DEFINE_integer('test_iter', -1, 'iteration to load model (-1 for latest model)')
@@ -51,7 +51,7 @@ flags.DEFINE_float('train_update_lr', -1, 'value of inner gradient step step dur
 def main():
     
     test_num_updates = 10
-    data_generator = DataGenerator(FLAGS.update_batch_size*2, FLAGS.meta_batch_size)  # only use one datapoint for testing to save memory
+    data_generator = dg.DataGenerator(FLAGS.update_batch_size*2, FLAGS.meta_batch_size)  # only use one datapoint for testing to save memory
 
 
     dim_output = data_generator.dim_output
@@ -79,7 +79,7 @@ def main():
     labelb = tf.slice(label_tensor, [0,FLAGS.update_batch_size,0], [-1,-1,-1])
     metaval_input_tensors = {'inputa': inputa, 'inputb': inputb, 'labela': labela, 'labelb': labelb, 'iter_init_op': iter_init_op}
 
-    model = MAML(dim_input, dim_output, test_num_updates=test_num_updates)
+    model = maml.MAML(dim_input, dim_output, test_num_updates=test_num_updates)
     if FLAGS.train or not tf_data_load:
         model.construct_model(input_tensors=train_input_tensors, prefix='metatrain_')
     if tf_data_load:

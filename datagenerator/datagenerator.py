@@ -39,21 +39,24 @@ class DataGenerator(object):
         self.num_val = 100
         self.num_train = 1200
         self.training_data_dir = FLAGS.training_data_dir
-        self.testing_data_dir = FLAGS.training_data_dir
+        self.testing_data_dir = FLAGS.testing_data_dir
         self.resized_data_dir = FLAGS.resized_data_dir
-        
+
         print(self.num_tasks)
         print(self.num_examples_per_task)
 
         if FLAGS.data_resize:
-          self.GenerateResizedImages('/content/drive/My Drive/Code/OSILML/data/omniglot/images_evaluation/*/*/*.png', self.resized_data_dir)
+          self.GenerateResizedImages('data/omniglot/images_background/*/*/*.png', self.resized_data_dir, is_training=True)
+          self.GenerateResizedImages('data/omniglot/images_evaluation/*/*/*.png', self.resized_data_dir, is_training=False)
+          input('Done resizing.... Press Any Key to Continue...')
 
         if FLAGS.data_generation:
           print('Generating Data!!! This will take some time....')
           self.GenerateAllTasks()
+          input('Done Generating.... Press Any Key to Continue...')
 
         self.training_char_folders, self.metaval_char_folders = self.extract_task_folders(self.training_data_dir)
-        
+
         #Create a training dataset generator
         training_image_files, training_labels = self.get_imagefiles_with_labels(self.training_char_folders, self.num_examples_per_task)
         print(training_image_files)
@@ -65,7 +68,7 @@ class DataGenerator(object):
         train_iter_init_op = train_iter.initializer
         with tf.control_dependencies([train_iter_init_op]):
           train_images, train_labels = train_iter.get_next()
-        
+
         train_images = tf.reshape(train_images, [-1,self.num_examples_per_task, self.dim_input])
         train_labels = tf.reshape(train_labels, [-1,self.num_examples_per_task, 2])
         
@@ -86,25 +89,28 @@ class DataGenerator(object):
         metaval_labels = tf.reshape(metaval_labels, [-1,self.num_examples_per_task, 2])
         self.metaval_inputs = {'images': metaval_images, 'labels': metaval_labels, 'iter_init_op': metaval_iter_init_op}
 
-#         # Test that the images are as per the image files passed
-#         with tf.Session() as sess:
-#           for _ in range(self.num_tasks):
-#             image_batch, label_batch = sess.run([train_images, train_labels]) # index 0 contains image and index 1 contains label
-#             print(image_batch.shape)
-#             print(label_batch.shape)
-#             image_batch = image_batch.reshape([-1,self.num_examples_per_task, self.canvas_w,self.canvas_h,3])
-#             for i in range(self.num_tasks):
-#               plt.figure(i+1)
-#               for j in range(self.num_examples_per_task):
-#                 plt.subplot(2,self.num_examples_per_task,j+1)
-#                 plt.imshow(image_batch[i,j,:,:])
-#                 print(label_batch[i,j,:])
+        # Test that the images are as per the image files passed
+        with tf.Session() as sess:
+          for _ in range(self.num_tasks):
+            image_batch, label_batch = sess.run([train_images, train_labels]) # index 0 contains image and index 1 contains label
+            print(image_batch.shape)
+            print(label_batch.shape)
+            image_batch = image_batch.reshape([-1,self.num_examples_per_task, self.canvas_w,self.canvas_h,3])
+            for i in range(self.num_tasks):
+              plt.figure(i+1)
+              for j in range(self.num_examples_per_task):
+                plt.subplot(2,self.num_examples_per_task,j+1)
+                plt.imshow(image_batch[i,j,:,:])
+                print(label_batch[i,j,:])
         
 
-    def GenerateResizedImages(self, raw_img_dir, resized_img_dir):
+    def GenerateResizedImages(self, raw_img_dir, resized_img_dir, is_training=True):
         if not os.path.isdir(resized_img_dir):
             os.mkdir(resized_img_dir)
-        resized_img_dir = resized_img_dir + 'testing/'
+        if not is_training:
+            resized_img_dir = resized_img_dir + 'testing/'
+        else:
+            resized_img_dir = resized_img_dir + 'training/'
         if not os.path.isdir(resized_img_dir):
             os.mkdir(resized_img_dir)
         # Find the list of all images
@@ -131,7 +137,7 @@ class DataGenerator(object):
         self.M = 24 # Number of random examples for each given character
         self.DeleteDataset()
         self.GenerateTrainingTasks()
-        #self.GenerateTestingTasks()
+        self.GenerateTestingTasks()
         return
 
     def DeleteDataset(self):
@@ -154,7 +160,8 @@ class DataGenerator(object):
         # For each character create M random examples
         for target_char_id in char_ids:
             print('Generating ' + str(target_char_id) + ' out of ' + str(len(char_ids)))
-            lines=[]
+            column_list = ["char_id", "example #", "x", "y"]
+            df = pd.DataFrame([], columns=column_list)
             dir_str = dir_prefix_str + str(target_char_id) + '/'
             try:
                 os.mkdir(dir_str)
@@ -174,7 +181,8 @@ class DataGenerator(object):
                     if i == 0:
                         # Record relative position of target character on the canvas
                         yp = [pos_x*1./self.canvas_w, pos_y*1./self.canvas_h]
-                        lines.append([str(target_char_id), str(m), str(yp[0]), str(yp[1])])
+                        val_list = [str(target_char_id), str(m), str(yp[0]), str(yp[1])]
+                        df = df.append(pd.DataFrame([val_list], columns=column_list), ignore_index=True)
                         # paste target char image
                         char_img_file = random.choice(char_data_dict[target_char_id]['image_file_list']) # Randomly choose any one sample of the target character
                     else:
@@ -194,10 +202,7 @@ class DataGenerator(object):
 
                     Image.fromarray(np.array(canvas_img)).save(img_name_str)
 
-            with open(dir_str + str(target_char_id) + '.csv', 'w') as writeFile:
-                writer = csv.writer(writeFile)
-                writer.writerows(lines)
-            writeFile.close()
+            df.to_csv(dir_str + str(target_char_id) + '.csv')
             print('done...')
         return
     
@@ -225,7 +230,7 @@ class DataGenerator(object):
 
 
     def GenerateTrainingTasks(self):
-        self.training_data_dict = self.get_data_dict_V2('/content/drive/My Drive/Code/OSILML/data/resized_data/training/*/*/*.png')
+        self.training_data_dict = self.get_data_dict('data/resized_data/training/*/*/*.png')
         try:
             os.mkdir(self.training_data_dir)
         except FileExistsError:
@@ -236,7 +241,7 @@ class DataGenerator(object):
 
     def GenerateTestingTasks(self):
         print('Generating resized images!!! This will take a while..')
-        self.testing_data_dict = self.get_data_dict_V2('/content/drive/My Drive/Code/OSILML/data/resized_data/testing/*/*/*.png')
+        self.testing_data_dict = self.get_data_dict('data/resized_data/testing/*/*/*.png')
         print('done...')
         try:
             os.mkdir(self.testing_data_dir)

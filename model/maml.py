@@ -1,3 +1,8 @@
+import tensorflow as tf
+from tensorflow.python.platform import flags
+
+flags = tf.app.flagsFLAGS = flags.FLAGS
+
 class MAML:
     def __init__(self, dim_input=1, dim_output=1, test_num_updates=5):
         """ must call construct_model() after initializing MAML! """
